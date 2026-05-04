@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🏁 Corrida de Emoticons - Corrida Maluca</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0a2f1f 0%, #051f12 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Courier New', 'Fira Code', monospace;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Container principal do jogo */
+        .game-container {
+            background: #1e2a2e;
+            border-radius: 64px 64px 48px 48px;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.1);
+            padding: 20px 25px 30px 25px;
+            border-bottom: 6px solid #f5e56b;
+        }
+
+        /* painel de status */
+        .dashboard {
+            background: #0f1a1f;
+            border-radius: 60px;
+            padding: 10px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 15px;
+            color: #ffecb3;
+            text-shadow: 0 2px 2px black;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.6), 0 5px 10px rgba(0,0,0,0.3);
+            font-weight: bold;
+        }
+
+        .score-box, .best-box {
+            background: #00000066;
+            backdrop-filter: blur(2px);
+            padding: 5px 20px;
+            border-radius: 3rem;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .score-box span:first-child, .best-box span:first-child {
+            font-size: 1rem;
+            color: #fdd67a;
+        }
+
+        .best-box {
+            background: #2c1e0faa;
+        }
+
+        .speed-box {
+            background: #111;
+            padding: 5px 20px;
+            border-radius: 3rem;
+            font-size: 1.4rem;
+            font-family: monospace;
+        }
+
+        .speed-box span {
+            color: #ffb347;
+        }
+
+        /* pista de corrida */
+        .race-track {
+            background: #2c2b26;
+            border-radius: 28px;
+            padding: 15px 20px;
+            box-shadow: inset 0 0 0 3px #f9e0a0, inset 0 0 0 8px #4a3a1e, 0 12px 28px black;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #2b2b26;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            cursor: pointer;
+            width: 100%;
+            height: auto;
+        }
+
+        /* controles e botões */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 35px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .ctrl-btn {
+            background: #3a2c1f;
+            border: none;
+            font-size: 2.3rem;
+            padding: 8px 28px;
+            border-radius: 70px;
+            font-weight: bold;
+            color: #f9eec1;
+            box-shadow: 0 7px 0 #1f1409;
+            cursor: pointer;
+            transition: 0.07s linear;
+            font-family: monospace;
+        }
+
+        .ctrl-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #1f1409;
+        }
+
+        .restart-btn {
+            background: #714e2c;
+            font-size: 1.3rem;
+            padding: 8px 20px;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 0 #3e2a18;
+        }
+
+        .status-area {
+            background: #010e0b;
+            border-radius: 40px;
+            text-align: center;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #daa520;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .info-text {
+            font-size: 0.8rem;
+            background: #1e2d28;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            color: #bdd4bf;
+        }
+
+        @media (max-width: 550px) {
+            .dashboard { font-size: 0.9rem; }
+            .score-box, .best-box { font-size: 1.2rem; padding: 3px 12px; }
+            .ctrl-btn { font-size: 1.8rem; padding: 5px 20px; }
+            .game-container { padding: 12px 16px 25px; }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="game-container">
+        <div class="dashboard">
+            <div class="score-box">🏆 SCORE: <span id="scoreValue">0</span></div>
+            <div class="speed-box">⚡ VELOCIDADE: <span id="speedValue">0</span></div>
+            <div class="best-box">🏅 RECORDE: <span id="bestValue">0</span></div>
+        </div>
+
+        <div class="race-track">
+            <canvas id="gameCanvas" width="500" height="500"></canvas>
+        </div>
+
+        <div class="controls">
+            <button class="ctrl-btn" id="leftBtn">◀ ESQ</button>
+            <button class="ctrl-btn restart-btn" id="restartBtn">🔄 REINICIAR</button>
+            <button class="ctrl-btn" id="rightBtn">DIR ▶</button>
+        </div>
+        <div class="status-area" id="gameStatusText">
+            🏎️ PRESSIONE ◀ ou ▶ para correr!
+        </div>
+        <div class="info-text">
+            💨 Desvie dos 🧱 blocos! Cada segundo sobrevivendo = +1 ponto. Velocidade aumenta com o tempo.
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- CONFIGURAÇÕES DO JOGO ----------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Dimensões da pista (em células lógicas 7x7 para simplificar grid divertido)
+        // mas usaremos posições contínuas para movimento suave e "emoticons"
+        // Largura = 500px, Altura = 500px.
+        // Carro (jogador) representado por emoticon 🚗, se move em X (horizontal)
+        // Obstáculos: serão emoticons de tijolo/bloco 🧱 e também alguns 🚧.
+        
+        // Parâmetros
+        const LANE_COUNT = 5;          // 5 faixas
+        const LANE_WIDTH = canvas.width / LANE_COUNT;  // 100px cada faixa
+        const CAR_WIDTH = 60;
+        const CAR_HEIGHT = 60;
+        const OBSTACLE_SIZE = 54;       // tamanho emoticon obstáculo
+        
+        // Posição inicial do carro (índice da faixa central)
+        let currentLane = 2;            // 0,1,2,3,4 -> central = 2
+        let score = 0;
+        let bestScore = 0;
+        let gameRunning = true;
+        let frameRequest;
+        
+        // Array de obstáculos ativos
+        let obstacles = [];
+        
+        // Velocidade de movimento dos obstáculos (pixels por frame)
+        let baseSpeed = 3.2;
+        let currentSpeed = baseSpeed;
+        let speedMultiplier = 1.0;
+        
+        // Controle de geração de obstáculos
+        let framesSinceLastObstacle = 0;
+        let obstacleDelayFrames = 35;     // inicialmente a cada ~35 frames, aumenta com a velocidade
+        
+        // Gravador de melhor pontuação via localStorage
+        try {
+            const savedBest = localStorage.getItem('racing_emoticon_best');
+            if(savedBest && !isNaN(parseInt(savedBest))) bestScore = parseInt(savedBest);
+        } catch(e) { /* ignora */ }
+        document.getElementById('bestValue').innerText = bestScore;
+        
+        // Emoticons e desenhos
+        const CAR_EMOJI = "🚗";
+        const OBSTACLE_EMOJIS = ["🧱", "🚧", "🪨", "💣", "⛔"];
+        
+        // Função para desenhar o jogador (emoticon gigante)
+        function drawCar() {
+            const carX = currentLane * LANE_WIDTH + (LANE_WIDTH/2) - CAR_WIDTH/2;
+            const carY = canvas.height - CAR_HEIGHT - 12;  // próximo do chão
+            ctx.font = `${CAR_HEIGHT}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            // sombra suave
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "black";
+            ctx.fillStyle = "white";
+            ctx.fillText(CAR_EMOJI, carX + CAR_WIDTH/2, carY + CAR_HEIGHT/2);
+            ctx.shadowBlur = 0;
+        }
+        
+        // Desenhar obstáculos
+        function drawObstacles() {
+            for(let obs of obstacles) {
+                const x = obs.lane * LANE_WIDTH + (LANE_WIDTH/2) - OBSTACLE_SIZE/2;
+                const y = obs.y;
+                ctx.font = `${OBSTACLE_SIZE}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.shadowBlur = 4;
+                ctx.fillStyle = "#111";
+                ctx.fillText(obs.emoji, x + OBSTACLE_SIZE/2, y + OBSTACLE_SIZE/2);
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Desenhar faixas e pista charmosa
+        function drawTrack() {
+            // asfalto com divisórias
+            for(let i = 0; i <= LANE_COUNT; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffd966";
+                ctx.lineWidth = 3;
+                ctx.setLineDash([12, 20]);
+                ctx.moveTo(i * LANE_WIDTH, 0);
+                ctx.lineTo(i * LANE_WIDTH, canvas.height);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            // linha de chegada / partida com listras
+            ctx.fillStyle = "#c9a53b";
+            for(let i=0; i<10; i++) {
+                if(i%2 === 0) ctx.fillStyle = "#f2d86d";
+                else ctx.fillStyle = "#5e431a";
+                ctx.fillRect(0, canvas.height-25 + (i%3)*3, canvas.width, 4);
+            }
+            ctx.fillStyle = "white";
+            ctx.font = "bold 18px monospace";
+            ctx.fillText("🏁 META", canvas.width-70, canvas.height-8);
+            // bordas decorativas
+            ctx.strokeStyle = "#f5bc70";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(5,5,canvas.width-10,canvas.height-10);
+        }
+        
+        // Detecção de colisão (baseada em bounding box)
+        function checkCollision() {
+            const carX = currentLane * LANE_WIDTH + (LANE_WIDTH/2) - CAR_WIDTH/2;
+            const carY = canvas.height - CAR_HEIGHT - 12;
+            const carRight = carX + CAR_WIDTH;
+            const carBottom = carY + CAR_HEIGHT;
+            
+            for(let i=0; i<obstacles.length; i++) {
+                const obs = obstacles[i];
+                const obsX = obs.lane * LANE_WIDTH + (LANE_WIDTH/2) - OBSTACLE_SIZE/2;
+                const obsY = obs.y;
+                const obsRight = obsX + OBSTACLE_SIZE;
+                const obsBottom = obsY + OBSTACLE_SIZE;
+                
+                if(carX < obsRight && carRight > obsX && carY < obsBottom && carBottom > obsY) {
+                    return true; // colidiu
+                }
+            }
+            return false;
+        }
+        
+        // Atualizar pontuação baseado no tempo (frames sobreviventes)
+        // A cada frame, incrementa um contador incremental
+        let scoreAccumulator = 0;
+        function updateScoreBySurvival() {
+            if(!gameRunning) return;
+            // a cada frame, aumenta 0.03 pontos, mas para manter balance, vamos acumular e inteirar
+            scoreAccumulator += 0.045;
+            if(scoreAccumulator >= 1) {
+                let points = Math.floor(scoreAccumulator);
+                score += points;
+                scoreAccumulator -= points;
+                updateScoreUI();
+            }
+            // atualiza recorde se necessario
+            if(score > bestScore) {
+                bestScore = score;
+                document.getElementById('bestValue').innerText = bestScore;
+                try { localStorage.setItem('racing_emoticon_best', bestScore); } catch(e) {}
+            }
+        }
+        
+        function updateScoreUI() {
+            document.getElementById('scoreValue').innerText = Math.floor(score);
+        }
+        
+        // aumentar velocidade gradualmente baseado na pontuação
+        function updateDynamicSpeed() {
+            let scoreInt = Math.floor(score);
+            // dificuldade: a cada 15 pontos aumenta 0.28 de velocidade, max 13.5
+            let extra = Math.min(9.0, Math.floor(scoreInt / 12) * 0.52);
+            currentSpeed = baseSpeed + extra;
+            // ajuste da geração de obstáculos: velocidade maior = menor intervalo entre obstáculos
+            let newDelay = Math.max(18, 38 - Math.floor(scoreInt / 14));
+            obstacleDelayFrames = Math.floor(newDelay);
+            // exibir velocidade na UI
+            let speedKmh = Math.floor(currentSpeed * 8.5);
+            document.getElementById('speedValue').innerText = speedKmh;
+        }
+        
+        // Gerar novo obstáculo em uma faixa aleatória (evitar congestionamento)
+        function tryGenerateObstacle() {
+            if(!gameRunning) return;
+            framesSinceLastObstacle++;
+            if(framesSinceLastObstacle >= obstacleDelayFrames) {
+                framesSinceLastObstacle = 0;
+                // Escolher faixa que não tenha obstáculo muito próximo da base (evitar spawn instantâneo)
+                let lanesWithRecent = new Set();
+                for(let obs of obstacles) {
+                    if(obs.y > canvas.height - 110) {  // se muito perto do carro evita mesma faixa?
+                        lanesWithRecent.add(obs.lane);
+                    }
+                }
+                let possibleLanes = [];
+                for(let i=0; i<LANE_COUNT; i++) {
+                    if(!lanesWithRecent.has(i)) possibleLanes.push(i);
+                }
+                if(possibleLanes.length === 0) possibleLanes = [0,1,2,3,4];
+                const randLane = possibleLanes[Math.floor(Math.random() * possibleLanes.length)];
+                const randomEmoji = OBSTACLE_EMOJIS[Math.floor(Math.random() * OBSTACLE_EMOJIS.length)];
+                obstacles.push({
+                    lane: randLane,
+                    y: -OBSTACLE_SIZE,
+                    emoji: randomEmoji,
+                });
+            }
+        }
+        
+        // Movimentar obstáculos (descer)
+        function moveObstacles() {
+            for(let i=0; i<obstacles.length; i++) {
+                obstacles[i].y += currentSpeed;
+            }
+            // remover os que passaram para fora da tela (acima ou mais que altura + margem)
+            obstacles = obstacles.filter(obs => obs.y < canvas.height + 100);
+        }
+        
+        // Lógica principal de atualização do jogo (frame)
+        function gameUpdate() {
+            if(!gameRunning) return;
+            
+            // 1) geração
+            tryGenerateObstacle();
+            // 2) movimenta obstáculos
+            moveObstacles();
+            // 3) colisão
+            const collided = checkCollision();
+            if(collided) {
+                gameRunning = false;
+                document.getElementById('gameStatusText').innerHTML = `💥 GAME OVER! Pontuação: ${Math.floor(score)}. Clique em REINICIAR 💥`;
+                cancelAnimationFrame(frameRequest);
+                draw();  // desenha estado final com mensagem
+                return;
+            }
+            
+            // 4) pontuação e velocidade
+            updateScoreBySurvival();
+            updateDynamicSpeed();
+            
+            // 5) renderização final
+            draw();
+            
+            // continua o loop
+            frameRequest = requestAnimationFrame(gameUpdate);
+        }
+        
+        // Função completa de desenho (pista, carro, obstáculos, HUD visual)
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawTrack();
+            drawObstacles();
+            drawCar();
+            
+            // exibir mensagem de game over se não estiver rodando (sobrescreve overlay leve)
+            if(!gameRunning) {
+                ctx.font = "bold 34px 'Segoe UI', monospace";
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = "#ffbb88";
+                ctx.shadowColor = "black";
+                ctx.fillText("💀 GAME OVER 💀", canvas.width/2, canvas.height/2 - 40);
+                ctx.font = "20px monospace";
+                ctx.fillStyle = "#ffe3b0";
+                ctx.fillText(" aperte REINICIAR ", canvas.width/2, canvas.height/2 + 30);
+                ctx.fillStyle = "#ffd966";
+                ctx.font = "bold 16px monospace";
+                ctx.fillText(`🏁 SCORE: ${Math.floor(score)}`, canvas.width/2, canvas.height - 50);
+            }
+            ctx.shadowBlur = 0;
+        }
+        
+        // Função para iniciar / reiniciar jogo
+        function restartGame() {
+            // resetar variáveis
+            gameRunning = true;
+            score = 0;
+            scoreAccumulator = 0;
+            currentSpeed = baseSpeed;
+            obstacles = [];
+            framesSinceLastObstacle = 12;
+            currentLane = 2;
+            updateScoreUI();
+            document.getElementById('speedValue').innerText = "0";
+            document.getElementById('gameStatusText').innerHTML = "🏎️ Correndo! Pressione ◀ ou ▶ para trocar de faixa!";
+            // recarregar melhor pontuação já está no bestScore
+            // reiniciar animação se houver frame pendente
+            if(frameRequest) cancelAnimationFrame(frameRequest);
+            // iniciar novamente
+            frameRequest = requestAnimationFrame(gameUpdate);
+        }
+        
+        // Controles de movimentação do carro (esquerda, direita)
+        function moveLeft() {
+            if(!gameRunning) return;
+            if(currentLane > 0) {
+                currentLane--;
+                // feedback sonoro visual pequeno (efeito canvas piscadinha não necessário)
+                draw(); // feedback imediato
+            }
+        }
+        
+        function moveRight() {
+            if(!gameRunning) return;
+            if(currentLane < LANE_COUNT-1) {
+                currentLane++;
+                draw();
+            }
+        }
+        
+        // Controle por teclado
+        function handleKeydown(e) {
+            const key = e.key;
+            if(key === 'ArrowLeft' || key === 'Left' || key === 'a' || key === 'A') {
+                e.preventDefault();
+                moveLeft();
+            } else if(key === 'ArrowRight' || key === 'Right' || key === 'd' || key === 'D') {
+                e.preventDefault();
+                moveRight();
+            } else if(key === ' ' || key === 'Space' || key === 'r' || key === 'R') {
+                if(!gameRunning) {
+                    e.preventDefault();
+                    restartGame();
+                } else if(key === 'r' || key === 'R') {
+                    // se pressionar R reinicia mesmo se estiver rodando (opcional)
+                    e.preventDefault();
+                    restartGame();
+                }
+            }
+        }
+        
+        // Eventos touch/mobile para botões
+        function bindControls() {
+            const leftBtn = document.getElementById('leftBtn');
+            const rightBtn = document.getElementById('rightBtn');
+            const restart = document.getElementById('restartBtn');
+            
+            leftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                moveLeft();
+            });
+            rightBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                moveRight();
+            });
+            restart.addEventListener('click', (e) => {
+                e.preventDefault();
+                restartGame();
+            });
+            
+            window.addEventListener('keydown', handleKeydown);
+            // também toque no canvas não interfere, mas é legal
+        }
+        
+        // Inicialização do jogo
+        function init() {
+            bindControls();
+            restartGame(); // inicia automaticamente
+        }
+        
+        init();
+    })();
+</script>
+</body>
+</html>
